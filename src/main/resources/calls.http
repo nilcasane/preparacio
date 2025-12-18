@@ -1,0 +1,374 @@
+### Login as Receptionist
+POST http://localhost:8080/loginJWT
+Content-Type: application/json
+
+{
+  "username": "rec",
+  "password": "password123"
+}
+> {%
+    client.global.set("rec_token", response.headers.valueOf("Authorization"));
+    client.log("token: " + response.headers.valueOf("Authorization"));
+%}
+
+### Login as Veterinarian
+POST http://localhost:8080/loginJWT
+Content-Type: application/json
+
+{
+  "username": "vet",
+  "password": "password123"
+}
+> {%
+    client.global.set("vet_token", response.headers.valueOf("Authorization"));
+    client.log("token: " + response.headers.valueOf("Authorization"));
+
+%}
+
+### Login as Clinic Manager
+POST http://localhost:8080/loginJWT
+Content-Type: application/json
+
+{
+  "username": "manager",
+  "password": "password123"
+}
+> {%
+    client.global.set("manager_token", response.headers.valueOf("Authorization"));
+    client.log("token: " + response.headers.valueOf("Authorization"));
+    // Initialize variables with defaults
+    client.global.set("visit_id", "1");
+    client.global.set("visit_id_p2", "2");
+    client.global.set("availability_id", "1");
+    client.global.set("exception_id", "1");
+    client.global.set("treatment_id", "1");
+    client.global.set("batch_id", "1");
+    client.global.set("invoice_id", "1");
+%}
+
+# ============================================
+# Part 1: Schedule Visits
+# ============================================
+
+### Setup: Create Availability for Vet 2 (Wednesday) - Using Receptionist
+# Login as Receptionist to get token
+POST http://localhost:8080/loginJWT
+Content-Type: application/json
+
+{
+  "username": "rec",
+  "password": "password123"
+}
+> {%
+    client.global.set("rec_token", response.headers.valueOf("Authorization"));
+%}
+
+### Setup: Create Availability Request
+POST http://localhost:8080/veterinarians/2/availabilities
+Authorization: {{rec_token}}
+Content-Type: application/json
+
+{
+  "day_of_week": 3,
+  "start_time": "09:00",
+  "end_time": "17:00",
+  "period_start": "2025-01-01",
+  "period_end": "2025-12-31"
+}
+> {%
+    client.global.set("availability_id", response.body.id);
+%}
+
+### UC1.1: Schedule New Visit
+POST http://localhost:8080/visits
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "visit_date": "2025-10-15",
+  "visit_time": "10:00",
+  "duration": 30,
+  "reason_for_visit": "General Checkup",
+  "veterinarian_id": 2,
+  "pet_id": 1,
+  "pet_owner_id": 5
+}
+> {%
+    client.global.set("visit_id", response.body.visit_id);
+%}
+
+### UC1.2: View Veterinarian's Schedule
+GET http://localhost:8080/veterinarians/2/schedule?start=2025-09-01&end=2025-10-30
+Authorization: {{manager_token}}
+
+### UC1.3: Reschedule Visit
+PUT http://localhost:8080/visits/{{visit_id}}/reschedule
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "newDate": "2025-10-16",
+  "newTime": "11:00",
+  "performedBy": "Receptionist"
+}
+
+### UC1.4: Cancel Scheduled Visit
+PUT http://localhost:8080/visits/{{visit_id}}/cancel
+Authorization: {{manager_token}}
+
+### UC1.5: Register Walk-in Visit
+POST http://localhost:8080/visits/walk-in?petId=1&petOwnerId=5
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+### UC1.6: Owner didn’t show up
+POST http://localhost:8080/visits/{{visit_id}}/owner-not-showed-up
+Authorization: {{manager_token}}
+
+### UC1.7: Manage Veterinarian Availability (Create)
+POST http://localhost:8080/veterinarians/2/availabilities
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "day_of_week": 1,
+  "start_time": "09:00",
+  "end_time": "17:00",
+  "period_start": "2025-01-01",
+  "period_end": "2025-12-31"
+}
+> {%
+    client.global.set("availability_id", response.body.id);
+%}
+
+### UC1.7: Manage Veterinarian Availability (Get All)
+GET http://localhost:8080/veterinarians/2/availabilities
+Authorization: {{manager_token}}
+
+### UC1.7: Manage Veterinarian Availability (Get One)
+GET http://localhost:8080/veterinarians/2/availabilities/{{availability_id}}
+Authorization: {{manager_token}}
+
+### UC1.7: Manage Veterinarian Availability (Update)
+PUT http://localhost:8080/veterinarians/2/availabilities/{{availability_id}}
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "day_of_week": 1,
+  "start_time": "08:00",
+  "end_time": "16:00",
+  "period_start": "2025-01-01",
+  "period_end": "2025-12-31"
+}
+
+### UC1.7: Manage Veterinarian Availability (Create Exception)
+POST http://localhost:8080/veterinarians/2/availabilities/{{availability_id}}/exceptions
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "date": "2025-05-01",
+  "start_time": "08:00",
+  "end_time": "16:00",
+  "reason": "Holiday"
+}
+> {%
+    client.global.set("exception_id", response.body.id);
+%}
+
+### UC1.7: Manage Veterinarian Availability (Get Exceptions)
+GET http://localhost:8080/veterinarians/2/availabilities/{{availability_id}}/exceptions
+Authorization: {{manager_token}}
+
+### UC1.7: Manage Veterinarian Availability (Delete Exception)
+DELETE http://localhost:8080/veterinarians/2/availabilities/{{availability_id}}/exceptions/{{exception_id}}
+Authorization: {{manager_token}}
+
+### UC1.7: Manage Veterinarian Availability (Delete Availability)
+DELETE http://localhost:8080/veterinarians/2/availabilities/{{availability_id}}
+Authorization: {{manager_token}}
+
+### UC1.8: List specialities ordered by demand (Not Implemented)
+# GET http://localhost:8080/specialities/demand?start=2025-01-01&end=2025-12-31
+# Authorization: {{manager_token}}
+
+### UC1.9: List veterinarians ordered by demand
+GET http://localhost:8080/veterinarians/demand?start=2025-01-01&end=2025-12-31
+Authorization: {{manager_token}}
+
+# ============================================
+# Part 2: Keep Track of Visits and Treatments
+# ============================================
+
+# Create a new visit for Part 2 tests
+### Setup: Create Visit for Part 2
+POST http://localhost:8080/visits
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "visit_date": "2025-10-20",
+  "visit_time": "10:00",
+  "duration": 30,
+  "reason_for_visit": "Consultation",
+  "veterinarian_id": 2,
+  "pet_id": 1,
+  "pet_owner_id": 5
+}
+> {%
+    client.global.set("visit_id_p2", response.body.visit_id);
+%}
+
+### UC2.1: Start Visit Consultation
+POST http://localhost:8080/visits/{{visit_id_p2}}/start
+Authorization: {{manager_token}}
+
+### UC2.2: Record Visit Diagnosis and Notes
+POST http://localhost:8080/visits/{{visit_id_p2}}/diagnosis
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "diagnoses": "Healthy",
+  "notes": "Regular checkup, all good."
+}
+
+### UC2.3: Prescribe Medication
+POST http://localhost:8080/visits/{{visit_id_p2}}/prescriptions?medication_id=1
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "quantity": 1,
+  "dosage_instructions": "Take once daily",
+  "duration_in_days": 7
+}
+
+### UC2.3: List Prescriptions (Verification)
+GET http://localhost:8080/visits/{{visit_id_p2}}/prescriptions
+Authorization: {{manager_token}}
+
+### UC2.4: Prescribe/Record Treatment (Create Treatment)
+POST http://localhost:8080/visits/treatments
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "name": "Vaccination",
+  "description": "Annual vaccination",
+  "cost": 50.0
+}
+> {%
+    // Assuming the response is empty body but Location header has ID, or body has ID.
+    // Based on controller: return ResponseEntity.created(location).build(); -> No body.
+    // We need to extract ID from Location header.
+    var location = response.headers.valueOf("Location");
+    var id = location.substring(location.lastIndexOf('/') + 1);
+    client.global.set("treatment_id", id);
+%}
+
+### UC2.4: Prescribe/Record Treatment (Assign to Visit)
+POST http://localhost:8080/visits/{{visit_id_p2}}/treatment?treatment_id={{treatment_id}}
+Authorization: {{manager_token}}
+
+### UC2.1: Complete Visit Consultation
+POST http://localhost:8080/visits/{{visit_id_p2}}/complete
+Authorization: {{manager_token}}
+
+### UC2.5: View Pet's Medical History
+GET http://localhost:8080/visits/pets/1/medical-history
+Authorization: {{manager_token}}
+
+### UC2.6: List medication ordered by prescription
+GET http://localhost:8080/visits/prescriptions/report?from=2025-01-01&to=2025-12-31
+Authorization: {{manager_token}}
+
+### UC2.7: List veterinarians ordered by prescription
+GET http://localhost:8080/visits/veterinarians/report?medication_id=1&from=2025-01-01&to=2025-12-31
+Authorization: {{manager_token}}
+
+### UC2.8: Dispense Medication from Stock (Integrated in UC2.3)
+# This is handled automatically when prescribing medication.
+
+### UC2.9: Receive New Medication Batch
+POST http://localhost:8080/medications/1/medicationBatches
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "lot_number": 99999,
+  "received_date": "2025-01-01",
+  "expiry_date": "2026-01-01",
+  "initial_quantity": 100,
+  "current_quantity": 100,
+  "purchase_price_per_unit": 10.0
+}
+> {%
+    client.global.set("batch_id", response.body.batch_id);
+%}
+
+### UC2.9: List Batches (Verification)
+GET http://localhost:8080/medications/1/medicationBatches
+Authorization: {{manager_token}}
+
+### UC2.10: Receive Low Stock Alert (Create Alert - Manual Trigger)
+POST http://localhost:8080/medications/1
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "alert_date": "2025-12-01",
+  "acknowledged": false
+}
+
+### UC2.10: Receive Low Stock Alert (Get Alerts)
+GET http://localhost:8080/medications
+Authorization: {{manager_token}}
+
+### UC2.11: Manage Medication incompatibilities (Not Implemented)
+# POST http://localhost:8080/medications/incompatibilities
+# Authorization: {{manager_token}}
+
+### UC2.12: Medication incompatibility alert (Integrated in UC2.3)
+# This is checked automatically when prescribing medication.
+
+# ============================================
+# Part 3: Invoicing & Sales
+# ============================================
+
+### UC3.1: Generate Invoice from Visit
+POST http://localhost:8080/invoices
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "visit_id": {{visit_id_p2}}
+}
+> {%
+    client.global.set("invoice_id", response.body.invoice_id);
+%}
+
+### UC3.1: Get Invoice (Verification)
+GET http://localhost:8080/invoices/{{invoice_id}}
+Authorization: {{manager_token}}
+
+### UC3.1: Pay Invoice (Verification)
+POST http://localhost:8080/invoices/{{invoice_id}}/pay
+Authorization: {{manager_token}}
+Content-Type: application/json
+
+{
+  "payment_method": "CASH",
+  "transaction_reference": "CASH-2025-001"
+}
+
+### UC3.2: Sell Medication/Products (Non-Visit Sale) (Not Implemented)
+# POST http://localhost:8080/sales
+# Authorization: {{manager_token}}
+
+### UC3.3: Apply Discount to Invoice (Excluded)
+# Excluded as per user request.
+
+### UC3.4: Apply Loyalty Tier Discount (Excluded)
+# Excluded as per user request.

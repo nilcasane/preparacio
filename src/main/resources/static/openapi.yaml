@@ -1,0 +1,2209 @@
+openapi: 3.1.0
+info:
+  title: Veterinary Management
+  description: Veterinary Management
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+    description: "Local server"
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT authentication using OAuth2 Bearer token.
+
+        **How to authenticate:**
+        1. POST to `/loginJWT` with `administrator_id` and `password`
+        2. Receive JWT token in response
+        3. Include token in Authorization header: `Bearer <token>`
+
+        **Available scopes:**
+        - `RECEPTIONIST` - Clinic receptionist staff (manage visits, view schedules)
+        - `CLINIC_MANAGER` - Clinic manager (full system access)
+        - `VETERINARIAN` - Veterinarian (manage own schedule, view assigned visits)
+        - `PET_OWNER` - Pet owner (view own pets and visits)
+  parameters:
+    vet_id:
+      name: vet_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/VeterinarianId'
+    availability_id:
+      name: availability_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/AvailabilityId'
+    exception_id:
+      name: exception_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ExceptionId'
+    medication_id:
+      name: medication_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/MedicationId'
+    batch_id:
+      name: batch_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/BatchId'
+    promotion_id:
+      name: promotion_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/PromotionId'
+    discount_id:
+      name: discount_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/DiscountId'
+    loyalty_tier_id:
+      name: loyalty_tier_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/LoyaltyTierId'
+    visit_id:
+      name: visit_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/VisitId'
+    prescription_id:
+      name: prescription_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/PrescriptionId'
+    treatment_id:
+      name: treatment_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/TreatmentId'
+    invoice_id:
+      name: invoice_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/InvoiceId'
+    pet_id:
+      name: pet_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/PetId'
+    start_date:
+      name: start
+      in: query
+      required: true
+      description: "Start date of the requested schedule (inclusive)"
+      schema:
+        type: string
+        format: date
+      default: "2025-09-01"
+    end_date:
+      name: end
+      in: query
+      required: true
+      description: "End date of the requested schedule (inclusive)"
+      schema:
+        type: string
+        format: date
+      default: "2025-10-01"
+
+  requestBodies:
+    AvailabilityInput:
+      description: "Availability object input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              day_of_week:
+                type: integer
+              start_time:
+                $ref: '#/components/schemas/LocalTime'
+              end_time:
+                $ref: '#/components/schemas/LocalTime'
+              period_start:
+                $ref: '#/components/schemas/LocalDate'
+              period_end:
+                $ref: '#/components/schemas/LocalDate'
+    AvailabilityExceptionInput:
+      description: "Availability exception input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason:
+                type: string
+              day_of_week:
+                type: integer
+              start_time:
+                $ref: '#/components/schemas/LocalTime'
+              end_time:
+                $ref: '#/components/schemas/LocalTime'
+              period_start:
+                $ref: '#/components/schemas/LocalDate'
+              period_end:
+                $ref: '#/components/schemas/LocalDate'
+    PromotionInput:
+      description: "Promotion object input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              discount_code:
+                type: string
+              start_date:
+                $ref: '#/components/schemas/LocalDate'
+              end_date:
+                $ref: '#/components/schemas/LocalDate'
+    DiscountInput:
+      description: "Discount object input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              discount_type:
+                $ref: '#/components/schemas/DiscountType'
+              value_amount:
+                type: number
+              start_date:
+                $ref: '#/components/schemas/LocalDate'
+              end_date:
+                $ref: '#/components/schemas/LocalDate'
+              max_uses:
+                type: integer
+              uses_count:
+                type: integer
+    MedicationBatchInput:
+      description: "Medication batch input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              lot_number:
+                type: integer
+                format: int64
+              received_date:
+                $ref: '#/components/schemas/LocalDate'
+              expiry_date:
+                $ref: '#/components/schemas/LocalDate'
+              initial_quantity:
+                type: integer
+              current_quantity:
+                type: integer
+              purchase_price_per_unit:
+                type: number
+                format: double
+    LoyaltyTierInput:
+      description: "Loyalty tier input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              min_points:
+                type: integer
+              benefits:
+                type: string
+    LowStockAlertInput:
+      description: "Low stock alert input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              alert_date:
+                $ref: '#/components/schemas/LocalDate'
+              acknowledge:
+                type: boolean
+    VisitInput:
+      description: "Visit input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              visit_date:
+                $ref: '#/components/schemas/LocalDate'
+              visit_time:
+                $ref: '#/components/schemas/LocalTime'
+              duration:
+                type: integer
+                description: "If omitted, defaults to 15 minutes"
+              reason_for_visit:
+                type: string
+              price_per_fifteen:
+                type: number
+                format: double
+              status:
+                $ref: '#/components/schemas/VisitStatus'
+              veterinarian_id:
+                $ref: '#/components/schemas/VeterinarianId'
+              pet_id:
+                $ref: '#/components/schemas/PetId'
+              pet_owner_id:
+                type: integer
+                format: int64
+              diagnoses:
+                type: string
+              notes:
+                type: string
+    MedicationPrescriptionInput:
+      description: "Medication prescription input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              quantity:
+                type: integer
+              dosage_instructions:
+                type: string
+              duration_in_days:
+                type: integer
+    TreatmentInput:
+      description: "Treatment object input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              cost:
+                type: number
+                format: double
+    VisitRescheduleInput:
+      description: "Visit Reschedule input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              newDate:
+                $ref: '#/components/schemas/LocalDate'
+              newTime:
+                $ref: '#/components/schemas/LocalTime'
+              performedBy:
+                type: string
+    VisitDiagnosisInput:
+      description: "Visit Diagnosis input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              diagnoses:
+                type: string
+              notes:
+                type: string
+    InvoiceInput:
+      description: "Invoice input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              visit_id:
+                $ref: '#/components/schemas/VisitId'
+    PaymentInput:
+      description: "Payment input"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              payment_method:
+                $ref: '#/components/schemas/PaymentMethod'
+              transaction_reference:
+                $ref: '#/components/schemas/LocalDate'
+
+  schemas:
+    LocalTime:
+      type: string
+      format: time
+      description: "Local time in the format HH:MM"
+      default: "09:00"
+    LocalDate:
+      type: string
+      format: date
+      description: "Local date in the format YYYY-MM-DD"
+      default: "2025-01-01"
+    VeterinarianId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Veterinarian"
+    AvailabilityId:
+      type: integer
+      format: int64
+      description: "Unique identifier for an Availability"
+    ExceptionId:
+      type: integer
+      format: int64
+      description: "Unique identifier for an Exception"
+    PromotionId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Promotion"
+    DiscountId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Discount"
+    DiscountType:
+      type: string
+      enum:
+        - PERCENTAGE
+        - FIXED_AMOUNT
+        - LOYALTY_TIER
+      description: "Type of discount"
+    MedicationId:
+      type: integer
+      format: int64
+      description: "Unique identifier for an Medication"
+    BatchId:
+      type: integer
+      format: int64
+      description: "Unique identifier for an Batch"
+    LoyaltyTierId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Loyalty Tier"
+    VisitId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Visit"
+    PrescriptionId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Medication Prescription"
+    PetId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Pet"
+    PetOwnerId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Pet Owner"
+    TreatmentId:
+      type: integer
+      format: int64
+      description: "Unique identifier for a Treatment"
+    Veterinarian:
+      type: object
+      properties:
+        vet_id:
+          $ref: '#/components/schemas/VeterinarianId'
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone_number:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        license_number:
+          type: string
+        years_of_experience:
+          type: integer
+        availabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Availability'
+    Availability:
+      type: object
+      properties:
+        availability_id:
+          $ref: '#/components/schemas/AvailabilityId'
+        day_of_week:
+          type: integer
+        start_time:
+          $ref: '#/components/schemas/LocalTime'
+        end_time:
+          $ref: '#/components/schemas/LocalTime'
+        period_start:
+          $ref: '#/components/schemas/LocalDate'
+        period_end:
+          $ref: '#/components/schemas/LocalDate'
+        veterinarian:
+          $ref: '#/components/schemas/Veterinarian'
+    AvailabilityException:
+      type: object
+      properties:
+        exception_id:
+          $ref: '#/components/schemas/ExceptionId'
+        reason:
+          type: string
+        day_of_week:
+          type: integer
+        start_time:
+          $ref: '#/components/schemas/LocalTime'
+        end_time:
+          $ref: '#/components/schemas/LocalTime'
+        period_start:
+          $ref: '#/components/schemas/LocalDate'
+        period_end:
+          $ref: '#/components/schemas/LocalDate'
+        availability:
+          $ref: '#/components/schemas/Availability'
+    Promotion:
+      type: object
+      properties:
+        promotion_id:
+          $ref: '#/components/schemas/PromotionId'
+        name:
+          type: string
+        description:
+          type: string
+        discount_code:
+          type: string
+        start_date:
+          $ref: '#/components/schemas/LocalDate'
+        end_date:
+          $ref: '#/components/schemas/LocalDate'
+    Discount:
+      type: object
+      properties:
+        discount_id:
+          $ref: '#/components/schemas/DiscountId'
+        discount_type:
+          $ref: '#/components/schemas/DiscountType'
+        value_amount:
+          type: number
+        start_date:
+          $ref: '#/components/schemas/LocalDate'
+        end_date:
+          $ref: '#/components/schemas/LocalDate'
+        max_uses:
+          type: integer
+        uses_count:
+          type: integer
+    Medication:
+      type: object
+      properties:
+        medication_id:
+          $ref: '#/components/schemas/MedicationId'
+        name:
+          type: string
+        active_ingredient:
+          type: string
+        dosage_unit:
+          type: integer
+        unit_price:
+          type: number
+          format: double
+    MedicationIncompatibility:
+      type: object
+      properties:
+        medication_id1:
+          $ref: '#/components/schemas/MedicationId'
+        medication_id2:
+          $ref: '#/components/schemas/MedicationId'
+        description:
+          type: string
+    MedicationBatch:
+      type: object
+      properties:
+        batch_id:
+          $ref: '#/components/schemas/BatchId'
+        medication_id:
+          $ref: '#/components/schemas/MedicationId'
+        lot_number:
+          type: integer
+          format: int64
+        received_date:
+          $ref: '#/components/schemas/LocalDate'
+        expiry_date:
+          $ref: '#/components/schemas/LocalDate'
+        initial_quantity:
+          type: integer
+        current_quantity:
+          type: integer
+        purchase_price_per_unit:
+          type: number
+          format: double
+    LowStockAlertInformation:
+      type: object
+      properties:
+        id:
+          type: integer
+        alertDate:
+          type: string
+          format: date-time
+        acknowledged:
+          type: boolean
+        medicationId:
+          type: integer
+        medicationName:
+          type: string
+    LowStockAlertCommand:
+      type: object
+      properties:
+        acknowledged:
+          type: boolean
+    LoyaltyTier:
+      type: object
+      properties:
+        loyalty_tier_id:
+          $ref: '#/components/schemas/LoyaltyTierId'
+        name:
+          type: string
+        description:
+          type: string
+        min_points:
+          type: integer
+        benefits:
+          type: string
+        discount_id:
+          $ref: '#/components/schemas/DiscountId'
+    Visit:
+      type: object
+      properties:
+        visit_id:
+          $ref: '#/components/schemas/VisitId'
+        visit_date:
+          $ref: '#/components/schemas/LocalDate'
+        visit_time:
+          $ref: '#/components/schemas/LocalTime'
+        duration:
+          type: integer
+        reason_for_visit:
+          type: string
+        diagnoses:
+          type: string
+        notes:
+          type: string
+        price_per_fifteen:
+          type: double
+        status:
+          $ref: '#/components/schemas/VisitStatus'
+        veterinarian_id:
+          $ref: '#/components/schemas/VeterinarianId'
+        pet_id:
+          $ref: '#/components/schemas/PetId'
+        pet_owner_id:
+          $ref: '#/components/schemas/PetOwnerId'
+        medication_prescriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationPrescriptionInformation'
+        treatment:
+          $ref: '#/components/schemas/Treatment'
+    VisitInformation:
+      type: object
+      properties:
+        visit_id:
+          type: integer
+        visitTime:
+          type: string
+          format: date-time
+        visitDate:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+        reasonForVisit:
+          type: string
+        medicationId:
+          type: integer
+        visitStatus:
+          $ref: '#/components/schemas/VisitStatus'
+        veterinarian_id:
+          $ref: '#/components/schemas/VeterinarianId'
+        pet_id:
+          $ref: '#/components/schemas/PetId'
+        pet_owner_id:
+          $ref: '#/components/schemas/PetOwnerId'
+        treatment:
+          $ref: '#/components/schemas/TreatmentInformation'
+    MedicationPrescriptionInformation:
+      type: object
+      properties:
+        prescription_id:
+          $ref: '#/components/schemas/PrescriptionId'
+        visit_id:
+          $ref: '#/components/schemas/VisitId'
+        medication_id:
+          $ref: '#/components/schemas/MedicationId'
+        medication_name:
+          type: string
+        quantity:
+          type: integer
+        dosage_instructions:
+          type: string
+        duration_in_days:
+          type: integer
+    Treatment:
+      type: object
+      properties:
+        treatment_id:
+          $ref: '#/components/schemas/TreatmentId'
+        name:
+          type: string
+        description:
+          type: string
+        cost:
+          type: number
+          format: double
+    TreatmentInformation:
+      type: object
+      properties:
+        treatment_id:
+          $ref: '#/components/schemas/TreatmentId'
+        name:
+          type: string
+        description:
+          type: string
+        cost:
+          type: number
+          format: double
+    VisitStatus:
+      type: string
+      enum: [ SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, NOT_SHOWED_UP ]
+      description: "Status of the visit"
+    VeterinarianSchedule:
+      type: object
+      properties:
+        veterinarian_id:
+          $ref: '#/components/schemas/VeterinarianId'
+        start_date:
+          $ref: '#/components/schemas/LocalDate'
+        end_date:
+          $ref: '#/components/schemas/LocalDate'
+        visits:
+          type: array
+          items:
+            $ref: '#/components/schemas/Visit'
+        availabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Availability'
+    InvoiceId:
+      type: integer
+      format: int64
+      description: "Unique identifier for an Invoice"
+    Invoice:
+      type: object
+      properties:
+        invoice_id:
+          $ref: '#/components/schemas/InvoiceId'
+        visit_id:
+          $ref: '#/components/schemas/VisitId'
+        invoice_date:
+          $ref: '#/components/schemas/LocalDate'
+        amount:
+          type: number
+          format: double
+        due_date:
+          $ref: '#/components/schemas/LocalDate'
+        paid:
+          type: boolean
+    PaymentMethod:
+      type: string
+      enum: [ CASH, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER ]
+      description: "Method of payment"
+    VeterinarianDemand:
+      type: object
+      properties:
+        veterinarian_id:
+          $ref: '#/components/schemas/VeterinarianId'
+        first_name:
+          type: string
+        last_name:
+          type: string
+        scheduled_visits:
+          type: integer
+          format: int64
+          description: "Number of scheduled visits in the requested period"
+    VisitHistoryEntry:
+      type: object
+      properties:
+        consultation_date:
+          $ref: '#/components/schemas/LocalDate'
+        visit:
+          $ref: '#/components/schemas/Visit'
+        treatment:
+          $ref: '#/components/schemas/TreatmentInformation'
+        prescriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationPrescriptionInformation'
+
+paths:
+  /loginJWT:
+    post:
+      tags: [ Authentication ]
+      summary: "Login and receive a JWT token"
+      security: []  # Public endpoint
+      requestBody:
+        description: "User credentials"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: "Username or email"
+                password:
+                  type: string
+      responses:
+        '200':
+          description: "JWT token received"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  # ============================================
+  # Veterinarians
+  # ============================================
+
+  /veterinarians/{vet_id}/availabilities:
+    post:
+      tags: [ Veterinarians ]
+      summary: "Create a new availability for a Veterinarian"
+      security:
+        - bearerAuth: [RECEPTIONIST]
+      parameters:
+        - $ref: '#/components/parameters/vet_id'
+      requestBody:
+        $ref: '#/components/requestBodies/AvailabilityInput'
+      responses:
+        '201':
+          description: "Availability created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Veterinarian not found"
+    get:
+      tags: [ Veterinarians ]
+      summary: "Get all availabilities from a Veterinarian"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/vet_id'
+      responses:
+        '200':
+          description: "Availabilities found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Availability'
+        '404':
+          description: "Availabilities not found"
+    delete:
+      tags: [ Veterinarians ]
+      summary: "Delete all availabilities from a Veterinarian"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/vet_id'
+      responses:
+        '204':
+          description: "Availabilities deleted"
+        '404':
+          description: "Veterinarian not found"
+
+  /veterinarians/{vet_id}/schedule:
+    get:
+      tags: [ Veterinarians ]
+      summary: "Get the schedule of a Veterinarian"
+      security:
+        - bearerAuth: [VETERINARIAN, RECEPTIONIST]
+      parameters:
+        - $ref: '#/components/parameters/vet_id'
+        - $ref: '#/components/parameters/start_date'
+        - $ref: '#/components/parameters/end_date'
+      responses:
+        '200':
+          description: "Schedule found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VeterinarianSchedule'
+        '400':
+          description: "Invalid date range"
+        '404':
+          description: "Veterinarian not found"
+
+  /veterinarians/demand:
+    get:
+      tags: [ Veterinarians ]
+      summary: "List veterinarians ordered by demand in a given period"
+      description: "Returns veterinarians ordered descending by the number of scheduled visits in the given period."
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/start_date'
+        - $ref: '#/components/parameters/end_date'
+      responses:
+        '200':
+          description: "List of veterinarians ordered by demand"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VeterinarianDemand'
+        '400':
+          description: "Invalid date range"
+
+  /veterinarians/{vet_id}/availabilities/{availability_id}:
+    get:
+      tags: [ Veterinarians ]
+      summary: "Get an availability"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/availability_id'
+      responses:
+        '200':
+          description: "Availability found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+        '404':
+          description: "Availability not found"
+    put:
+      tags: [ Veterinarians ]
+      summary: "Update an availability"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/availability_id'
+      requestBody:
+        $ref: '#/components/requestBodies/AvailabilityInput'
+      responses:
+        '200':
+          description: "Availability updated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Availability not found"
+    delete:
+      tags: [ Veterinarians ]
+      summary: "Delete an availability"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/availability_id'
+      responses:
+        '204':
+          description: "Availability deleted"
+        '404':
+          description: "Availability not found"
+
+  /veterinarians/{vet_id}/availabilities/{availability_id}/exceptions:
+    post:
+      tags: [ Veterinarians ]
+      summary: "Create a new exception for an availability"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/availability_id'
+      requestBody:
+        $ref: '#/components/requestBodies/AvailabilityExceptionInput'
+      responses:
+        '201':
+          description: "Exception created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityException'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Availability not found"
+    get:
+      tags: [ Veterinarians ]
+      summary: "Get all exceptions from an Availability"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/availability_id'
+      responses:
+        '200':
+          description: "Exceptions found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AvailabilityException'
+        '404':
+          description: "Exceptions not found"
+    delete:
+      tags: [ Veterinarians ]
+      summary: "Delete all exceptions from an Availability"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/availability_id'
+      responses:
+        '204':
+          description: "Exceptions deleted"
+        '404':
+          description: "Availability not found"
+
+  /veterinarians/{vet_id}/availabilities/{availability_id}/exceptions/{exception_id}:
+    get:
+      tags: [ Veterinarians ]
+      summary: "Get an exception"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/exception_id'
+      responses:
+        '200':
+          description: "Exception found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityException'
+        '404':
+          description: "Exception not found"
+    put:
+      tags: [ Veterinarians ]
+      summary: "Update an exception"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/exception_id'
+      requestBody:
+        $ref: '#/components/requestBodies/AvailabilityExceptionInput'
+      responses:
+        '200':
+          description: "Exception updated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityException'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Exception not found"
+    delete:
+      tags: [ Veterinarians ]
+      summary: "Delete an exception"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/exception_id'
+      responses:
+        '204':
+          description: "Exception deleted"
+        '404':
+          description: "Exception not found"
+
+  # ============================================
+  # Medications
+  # ============================================
+
+  /medications/{medication_id}:
+    get:
+      tags: [ Medications ]
+      summary: "Get a medication"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      responses:
+        '200':
+          description: "Medication found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medication'
+        '404':
+          description: "Medication not found"
+
+  /medications/{medication_id}/medicationBatches:
+    post:
+      tags: [ Medications ]
+      summary: "Create a new batch for a medication"
+      security:
+        - bearerAuth: [CLINIC_MANAGER]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      requestBody:
+        $ref: '#/components/requestBodies/MedicationBatchInput'
+      responses:
+        '201':
+          description: "Medication batch created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationBatch'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Medication not found"
+    get:
+      tags: [ Medications ]
+      summary: "Get all medication batches from a Medication"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      responses:
+        '200':
+          description: "Medication batches found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MedicationBatch'
+        '404':
+          description: "Medication not found"
+
+  /medications/medicationBatches/{batch_id}:
+    get:
+      tags: [ Medications ]
+      summary: "Get a medication batch"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/batch_id'
+      responses:
+        '200':
+          description: "Medication batch found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationBatch'
+        '404':
+          description: "Medication batch not found"
+    put:
+      tags: [ Medications ]
+      summary: "Update a medication batch"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/batch_id'
+      requestBody:
+        $ref: '#/components/requestBodies/MedicationBatchInput'
+      responses:
+        '200':
+          description: "Medication batch updated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationBatch'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Medication batch not found"
+    delete:
+      tags: [ Medications ]
+      summary: "Delete a medication batch"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/batch_id'
+      responses:
+        '204':
+          description: "Medication batch deleted"
+        '404':
+          description: "Medication batch not found"
+
+  /medications/low-stock-alerts:
+    get:
+      tags: [ Low Stock Alerts ]
+      summary: "Get all low stock alerts"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      responses:
+        '200':
+          description: "Low stock alerts found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LowStockAlertInformation'
+
+  /medications/{medication_id}/low-stock-alerts:
+    post:
+      tags: [ Low Stock Alerts ]
+      summary: "Create a low stock alert for a medication"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      requestBody:
+        $ref: '#/components/requestBodies/LowStockAlertInput'
+      responses:
+        '201':
+          description: "Low stock alert created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LowStockAlertInformation'
+        '409':
+          description: "Low stock alert already exists"
+    get:
+      tags: [ Low Stock Alerts ]
+      summary: "Get low stock alert for a medication"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      responses:
+        '200':
+          description: "Low stock alert found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LowStockAlertInformation'
+        '404':
+          description: "Medication not found"
+    delete:
+      tags: [ Low Stock Alerts ]
+      summary: "Delete a low stock alert"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      responses:
+        '204':
+          description: "Low stock alert deleted"
+        '404':
+          description: "Low stock alert not found"
+
+  /medications/{medication_id}/medicationIncompatibilities:
+    post:
+      tags: [ Medications ]
+      summary: "Create a new incompatibility for a medication"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      responses:
+        '201':
+          description: "Medication incompatibility created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationIncompatibility'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Medication not found"
+    delete:
+      tags: [ Medications ]
+      summary: "Delete an Incompatibility from a Medication"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      responses:
+        '204':
+          description: "Incompatibility deleted"
+        '404':
+          description: "Medication not found"
+    put:
+      tags: [ Medications ]
+      summary: "Modify an Incompatibility for a Medication"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/medication_id'
+      responses:
+        '204':
+          description: "Incompatibility modified"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationIncompatibility'
+        '404':
+          description: "Medication not found"
+
+  # ============================================
+  # Promotions
+  # ============================================
+
+  /promotions:
+    post:
+      tags: [ Promotions ]
+      summary: "Create a new Promotion"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      requestBody:
+        $ref: '#/components/requestBodies/PromotionInput'
+      responses:
+        '201':
+          description: "Promotion created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+        '400':
+          description: "Invalid input"
+
+  /promotions/{promotion_id}:
+    get:
+      tags: [ Promotions ]
+      summary: "Get a promotion"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/promotion_id'
+      responses:
+        '200':
+          description: "Promotion found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+        '404':
+          description: "Promotion not found"
+
+  /promotions/{promotion_id}/discounts:
+    post:
+      tags: [ Promotions ]
+      summary: "Create a new discount for a Promotion"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/promotion_id'
+      requestBody:
+        $ref: '#/components/requestBodies/DiscountInput'
+      responses:
+        '201':
+          description: "Discount created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discount'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Promotion not found"
+    get:
+      tags: [ Promotions ]
+      summary: "Get all discounts from a Promotion"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/promotion_id'
+      responses:
+        '200':
+          description: "Discounts found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Discount'
+        '404':
+          description: "Promotion not found"
+    delete:
+      tags: [ Promotions ]
+      summary: "Delete all discounts from a Promotion"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/promotion_id'
+      responses:
+        '204':
+          description: "Discounts deleted"
+        '404':
+          description: "Promotion not found"
+
+  /promotions/{promotion_id}/discounts/{discount_id}:
+    get:
+      tags: [ Promotions ]
+      summary: "Get a discount"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/discount_id'
+      responses:
+       '200':
+         description: "Discount found"
+         content:
+           application/json:
+             schema:
+              $ref: '#/components/schemas/Discount'
+       '404':
+          description: "Discount not found"
+    put:
+      tags: [ Promotions ]
+      summary: "Update a discount"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/discount_id'
+      requestBody:
+        $ref: '#/components/requestBodies/DiscountInput'
+      responses:
+        '200':
+          description: "Discount updated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discount'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Discount not found"
+
+  /promotions/{promotion_id}/discounts/{discount_id}/loyaltyTiers:
+    post:
+      tags: [ Loyalty Tiers ]
+      summary: "Create a new Loyalty Tier"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/discount_id'
+      requestBody:
+        $ref: '#/components/requestBodies/LoyaltyTierInput'
+      responses:
+        '201':
+          description: "Loyalty Tier created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyTier'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Discount not found"
+    get:
+      tags: [ Loyalty Tiers ]
+      summary: "Get all Loyalty Tiers from a Discount"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/discount_id'
+      responses:
+        '200':
+          description: "Loyalty Tiers found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoyaltyTier'
+        '404':
+          description: "Discount not found"
+
+  /promotions/{promotion_id}/discounts/{discount_id}/loyaltyTiers/{loyalty_tier_id}:
+    get:
+      tags: [ Loyalty Tiers ]
+      summary: "Get a Loyalty Tier"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/loyalty_tier_id'
+      responses:
+        '200':
+          description: "Loyalty Tier found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyTier'
+        '404':
+          description: "Loyalty Tier not found"
+    put:
+      tags: [ Loyalty Tiers ]
+      summary: "Update a Loyalty Tier"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/loyalty_tier_id'
+      requestBody:
+        $ref: '#/components/requestBodies/LoyaltyTierInput'
+      responses:
+        '200':
+          description: "Loyalty Tier updated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyTier'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Loyalty Tier not found"
+    delete:
+      tags: [ Loyalty Tiers ]
+      summary: "Delete a Loyalty Tier"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - $ref: '#/components/parameters/loyalty_tier_id'
+      responses:
+        '204':
+          description: "Loyalty Tier deleted"
+        '404':
+          description: "Loyalty Tier not found"
+
+  # ============================================
+  # Visits
+  # ============================================
+
+  /visits:
+    post:
+      tags: [ Visits ]
+      summary: "Create a visit"
+      security:
+        - bearerAuth: [RECEPTIONIST, PET_OWNER]
+      requestBody:
+        $ref: '#/components/requestBodies/VisitInput'
+      responses:
+        '201':
+          description: "Visit created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Veterinarian or Pet not found"
+        '409':
+          description: "Visit slot unavailable"
+  
+  /visits/walk-in:
+    post:
+      tags: [ Visits ]
+      summary: "Create a walk-in visit"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - name: petId
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/PetId'
+        - name: petOwnerId
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/PetOwnerId'
+      responses:
+        '201':
+          description: "Visit created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Pet or Pet Owner not found"
+
+  /visits/{visit_id}:
+    get:
+      tags: [ Visits ]
+      summary: "Get a Visit"
+      security:
+        - bearerAuth: [RECEPTIONIST, VETERINARIAN]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Visit found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit not found"
+    put:
+      tags: [ Visits ]
+      summary: "Update a Visit"
+      security:
+        - bearerAuth: [ RECEPTIONIST, VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      requestBody:
+        $ref: '#/components/requestBodies/VisitInput'
+      responses:
+        '200':
+          description: "Visit updated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Visit not found"
+        '409':
+          description: "Visit slot unavailable"
+    delete:
+      tags: [ Visits ]
+      summary: "Delete a Visit"
+      security:
+        - bearerAuth: [ RECEPTIONIST, VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '204':
+          description: "Visit deleted"
+        '404':
+          description: "Visit not found"
+
+  /visits/{visit_id}/start:
+    post:
+      tags: [ Visits ]
+      summary: "Start a Visit consultation"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Visit started"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit not found"
+
+  /visits/{visit_id}/complete:
+    post:
+      tags: [ Visits ]
+      summary: "Complete a Visit consultation"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Visit started"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit not found"
+
+  /visits/{visit_id}/diagnosis:
+    put:
+      tags: [ Visits ]
+      summary: "Record diagnosis and notes for a visit"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      requestBody:
+        $ref: '#/components/requestBodies/VisitDiagnosisInput'
+      responses:
+        '204':
+          description: "Diagnosis and notes recorded"
+        '404':
+          description: "Visit not found"
+        '409':
+          description: "Invalid visit status"
+
+  /visits/{visit_id}/cancel:
+    put:
+      tags: [ Visits ]
+      summary: "Cancel a visit"
+      security:
+        - bearerAuth: [ RECEPTIONIST, PET_OWNER ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '204':
+          description: "Visit canceled"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit, Veterinarian or owner not found"
+
+  /visits/{visit_id}/reschedule:
+    put:
+      tags: [ Visits ]
+      summary: "Reschedule a visit"
+      security:
+        - bearerAuth: [ RECEPTIONIST, PET_OWNER ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      requestBody:
+        $ref: '#/components/requestBodies/VisitRescheduleInput'
+      responses:
+        '204':
+          description: "Visit rescheduled"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit or Veterinarian not found"
+
+  /visits/{visit_id}/owner-not-showed-up:
+    post:
+      tags: [ Visits ]
+      summary: "Mark a visit as owner not showed up"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Visit marked as not showed up"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit not found"
+        '409':
+          description: "Invalid visit status"
+
+  # ============================================
+  # Visit Prescriptions
+  # ============================================
+
+  /visits/{visit_id}/prescriptions:
+    post:
+      tags: [ Visits ]
+      summary: "Create a medication prescription for a visit"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+        - name: medication_id
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/MedicationId'
+      requestBody:
+        $ref: '#/components/requestBodies/MedicationPrescriptionInput'
+      responses:
+        '201':
+          description: "Medication prescription created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationPrescriptionInformation'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Visit or Medication not found"
+        '409':
+          description: "Invalid visit status or insufficient stock"
+    get:
+      tags: [ Visits ]
+      summary: "List medication prescriptions for a visit"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Medication prescriptions found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MedicationPrescriptionInformation'
+        '404':
+          description: "Visit not found"
+
+  /visits/{visit_id}/prescriptions/{prescription_id}:
+    get:
+      tags: [ Visits ]
+      summary: "Get a medication prescription"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+        - $ref: '#/components/parameters/prescription_id'
+      responses:
+        '200':
+          description: "Medication prescription found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationPrescriptionInformation'
+        '404':
+          description: "Visit or Medication prescription not found"
+    put:
+      tags: [ Visits ]
+      summary: "Update a medication prescription"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+        - $ref: '#/components/parameters/prescription_id'
+      requestBody:
+        $ref: '#/components/requestBodies/MedicationPrescriptionInput'
+      responses:
+        '204':
+          description: "Medication prescription updated"
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Visit or Medication prescription not found"
+    delete:
+      tags: [ Visits ]
+      summary: "Delete a medication prescription"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+        - $ref: '#/components/parameters/prescription_id'
+      responses:
+        '204':
+          description: "Medication prescription deleted"
+        '404':
+          description: "Visit or Medication prescription not found"
+  /visits/prescriptions/report:
+    get:
+      tags: [ Visits ]
+      summary: "List medications ordered by number of prescriptions in a period"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            description: "Start date of the period (ISO format: YYYY-MM-DD)"
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            description: "End date of the period (ISO format: YYYY-MM-DD)"
+      responses:
+        200':
+          description: "Medication prescription counts found"
+          content:
+            application/json:
+              schema:
+               type: array
+               items:
+                 type: object
+               properties:
+                 medicationId:
+                   type: integer
+                   format: int64
+                 medicationName:
+                   type: string
+                 prescriptionCount:
+                   type: integer
+                   format: int64
+        '400':
+          description: "Invalid date range"
+        '404':
+          description: "No prescriptions found in the given period"
+  /visits/veterinarians/report:
+    get:
+      tags: [ Visits ]
+      summary: "List veterinarians ordered by number of prescriptions in a period"
+      security:
+        - bearerAuth: [ ADMINISTRATOR ]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            description: "Start date of the period (ISO format: YYYY-MM-DD)"
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            description: "End date of the period (ISO format: YYYY-MM-DD)"
+      responses:
+        200':
+          description: "veterinarians counts found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                properties:
+                  medicationId:
+                    type: integer
+                    format: int64
+                  medicationName:
+                    type: string
+                  prescriptionCount:
+                    type: integer
+                    format: int64
+        '400':
+          description: "Invalid date range"
+        '404':
+          description: "No prescriptions found in the given period"
+  # ============================================
+  # Visit Treatments
+  # ============================================
+
+  /visits/treatments:
+    post:
+      tags: [ Treatments ]
+      summary: "Create a new treatment"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      requestBody:
+        $ref: '#/components/requestBodies/TreatmentInput'
+      responses:
+        '201':
+          description: "Treatment created"
+        '400':
+          description: "Invalid input"
+    get:
+      tags: [ Treatments ]
+      summary: "List all treatments"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      responses:
+        '200':
+          description: "List of treatments"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TreatmentInformation'
+
+  /visits/treatments/{treatment_id}:
+    get:
+      tags: [ Treatments ]
+      summary: "Get a treatment by ID"
+      security:
+        - bearerAuth: [ RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/treatment_id'
+      responses:
+        '200':
+          description: "Treatment found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreatmentInformation'
+        '404':
+          description: "Treatment not found"
+    put:
+      tags: [ Treatments ]
+      summary: "Update a treatment"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/treatment_id'
+      requestBody:
+        $ref: '#/components/requestBodies/TreatmentInput'
+      responses:
+        '200':
+          description: "Treatment updated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreatmentInformation'
+        '404':
+          description: "Treatment not found"
+    delete:
+      tags: [ Treatments ]
+      summary: "Delete a treatment"
+      security:
+        - bearerAuth: [ CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/treatment_id'
+      responses:
+        '204':
+          description: "Treatment deleted"
+        '404':
+          description: "Treatment not found"
+
+  /visits/{visit_id}/treatment:
+    post:
+      tags: [ Visits ]
+      summary: "Assign a treatment to a visit"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+        - name: treatment_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: "Treatment assigned"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit or Treatment not found"
+    get:
+      tags: [ Visits ]
+      summary: "Get the treatment assigned to a visit"
+      security:
+        - bearerAuth: [ RECEPTIONIST, VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Treatment found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreatmentInformation'
+        '404':
+          description: "Visit or Treatment not found"
+    delete:
+      tags: [ Visits ]
+      summary: "Unassign a treatment from a visit"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Treatment unassigned"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit not found"
+
+  /visits/{visit_id}/isIncompatible:
+    post:
+      tags: [ Visits ]
+      summary: "Checks if the medication prescribed is incompatible with the pet"
+      security:
+        - bearerAuth: [ VETERINARIAN ]
+      parameters:
+        - $ref: '#/components/parameters/visit_id'
+      responses:
+        '200':
+          description: "Visit checked for incompatibilities successfully"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '404':
+          description: "Visit not found"
+        '409':
+          description: "Invalid visit status"
+
+  # ============================================
+  # Billing & Payments
+  # ============================================
+
+  /invoices:
+    post:
+      tags: [ Billing & Payments ]
+      summary: "Generate an invoice for a visit"
+      security:
+        - bearerAuth: [ RECEPTIONIST, CLINIC_MANAGER ]
+      requestBody:
+        $ref: '#/components/requestBodies/InvoiceInput'
+      responses:
+        '201':
+          description: "Invoice generated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '404':
+          description: "Visit not found"
+        '409':
+          description: "Invoice already exists for this visit"
+    get:
+      tags: [ Billing & Payments ]
+      summary: "Get all invoices"
+      security:
+        - bearerAuth: [ RECEPTIONIST, CLINIC_MANAGER ]
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/LocalDate'
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/LocalDate'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ PAID, UNPAID ]
+        - name: petOwnerId
+          in: query
+          required: false
+          schema:
+             $ref: '#/components/schemas/PetOwnerId'
+        - name: petId
+          in: query
+          required: false
+          schema:
+             $ref: '#/components/schemas/PetId'
+      responses:
+        '200':
+          description: "Invoices found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+        '404':
+          description: "Invoice not found"
+  
+  /invoices/{invoice_id}:
+    get:
+      tags: [ Billing & Payments ]
+      summary: "Get an invoice"
+      security:
+        - bearerAuth: [ RECEPTIONIST, CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/invoice_id'
+      responses:
+        '200':
+          description: "Invoice found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Invoice not found"
+    delete:
+      tags: [ Billing & Payments ]
+      summary: "Delete an invoice"
+      security:
+        - bearerAuth: [ RECEPTIONIST, CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/invoice_id'
+      responses:
+        '204':
+          description: "Invoice deleted"
+        '404':
+          description: "Invoice not found"
+
+  /invoices/{invoice_id}/pay:
+    post:
+      tags: [ Billing & Payments ]
+      summary: "Pay an invoice"
+      security:
+        - bearerAuth: [ RECEPTIONIST, CLINIC_MANAGER ]
+      parameters:
+        - $ref: '#/components/parameters/invoice_id'
+      requestBody:
+        $ref: '#/components/requestBodies/PaymentInput'
+      responses:
+        '200':
+          description: "Invoice paid"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          description: "Invalid input"
+        '404':
+          description: "Invoice not found"
+        '409':
+          description: "Invoice already paid"
+
+  /visits/pets/{pet_id}/medical-history:
+    get:
+      tags: [ Visits ]
+      security:
+        - bearerAuth: [ VETERINARIAN, RECEPTIONIST ]
+      parameters:
+        - $ref: '#/components/parameters/pet_id'
+      responses:
+        '200':
+          description: "Medical history retrieved"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VisitHistoryEntry'
+        '404':
+          description: "Pet not found"
+        '400':
+          description: "Invalid input"
